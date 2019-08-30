@@ -25,12 +25,6 @@ import java.util.Scanner;
  */
 
 /**
- * This class is used to parse a .m3u file.
- *
- * @author Ke
- */
-
-/**
  * #EXTM3U
  * #EXTINF:-1 tvg-id="Ned1.nl" tvg-name="||NL|| NPO 1 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo1hd.png" group-title="NEDERLAND HD",||NL|| NPO 1 HD
  * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/976
@@ -83,27 +77,31 @@ public class M3UParser {
             List<M3UItem> itemList = new ArrayList<>();
 
             for (String line : linesArray) {
-                line = shrink(line);
-                if (line.startsWith(PREFIX_EXTM3U)) {
-                    header = parseHead(shrink(line.replaceFirst(PREFIX_EXTM3U, EMPTY_STRING)));
-                } else if (line.startsWith(PREFIX_EXTINF)) {
-                    M3UItem item = parseItem(shrink(line.replaceFirst(PREFIX_EXTINF, EMPTY_STRING)));
-                    itemList.add(item);
-                } else if (line.startsWith(PREFIX_COMMENT)) {
-                    /**
-                     * Do nothing.
-                     */
-                } else if (line.equals(EMPTY_STRING)) {
-                    /**
-                     * Do nothing.
-                     */
-                } else {
-                    /**
-                     * The single line is treated as the stream URL.
-                     */
-                    M3UItem item = new M3UItem();
-                    item.setUrl(line);
-                    itemList.add(item);
+                try {
+                    line = shrink(line);
+                    if (line.startsWith(PREFIX_EXTM3U)) {
+                        header = parseHead(shrink(line.replaceFirst(PREFIX_EXTM3U, EMPTY_STRING)));
+                    } else if (line.startsWith(PREFIX_EXTINF)) {
+                        M3UItem item = parseItem(shrink(line.replaceFirst(PREFIX_EXTINF, EMPTY_STRING)));
+                        itemList.add(item);
+                    } else if (line.startsWith(PREFIX_COMMENT)) {
+                        /**
+                         * Do nothing.
+                         */
+                    } else if (line.equals(EMPTY_STRING)) {
+                        /**
+                         * Do nothing.
+                         */
+                    } else {
+                        /**
+                         * The single line is treated as the stream URL.
+                         */
+                        M3UItem item = new M3UItem();
+                        item.setUrl(line);
+                        itemList.add(item);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "parse item error");
                 }
             }
             m3uPlayList.setHeader(header);
@@ -159,8 +157,8 @@ public class M3UParser {
         return value;
     }
 
-    private static M3UHeader parseHead(String words) {
-        Map<String, String> attr = parseAttributes(words);
+    private static M3UHeader parseHead(String line) {
+        Map<String, String> attr = parseAttributes(line);
         M3UHeader header = new M3UHeader();
         header.setName(getAttr(attr, ATTR_NAME));
         header.setType(getAttr(attr, ATTR_TYPE));
@@ -190,10 +188,12 @@ public class M3UParser {
             return attr;
         }
 
-        String[] lineArray = line.split(EXT_NEW_LINE);
-        if (lineArray.length > 1) {
-            line = lineArray[0];
-            attr.put(ATTR_URL, lineArray[1]);
+        String[] lineItemList = line.split(EXT_NEW_LINE);
+        if (lineItemList.length > 0) {
+            line = lineItemList[0];
+            if (lineItemList.length > 1) {
+                attr.put(ATTR_URL, lineItemList[1]);
+            }
         }
 
         Status status = Status.READY;
