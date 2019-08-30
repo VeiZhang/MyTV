@@ -1,0 +1,6 @@
+apply from: "library.gradle"
+def libs = rootProject.ext.dependencies
+
+dependencies {
+    implementation libs["basetools"]
+}
