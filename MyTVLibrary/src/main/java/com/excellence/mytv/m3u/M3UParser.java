@@ -19,26 +19,9 @@ import java.util.Scanner;
  *     blog   : http://tiimor.cn
  *     time   : 2019/8/29
  *     desc   : https://github.com/crazyks/M3UPlayer    字符串解析解析，不完整，根据思路修改
- *              https://github.com/ema987/m3u8parser    正则表达式解析
- *              https://github.com/dholroyd/m3u8parser  正则表达式解析
  * </pre>
  */
 
-/**
- * #EXTM3U
- * #EXTINF:-1 tvg-id="Ned1.nl" tvg-name="||NL|| NPO 1 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo1hd.png" group-title="NEDERLAND HD",||NL|| NPO 1 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/976
- * #EXTINF:-1 tvg-id="Ned2.nl" tvg-name="||NL|| NPO 2 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo2hd.png" group-title="NEDERLAND HD",||NL|| NPO 2 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/974
- * #EXTINF:-1 tvg-id="Ned3.nl" tvg-name="||NL|| NPO 3 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo3hd.png" group-title="NEDERLAND HD",||NL|| NPO 3 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/973
- * #EXTINF:-1 tvg-id="RTL4.nl" tvg-name="||NL|| RTL 4 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/rtl4.png" group-title="NEDERLAND HD",||NL|| RTL 4 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/968
- * #EXTINF:-1,||NL|| RTL 5 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/967
- * #EXTINF:-1,||NL|| SBS 6 HD
- * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/961
- */
 public class M3UParser {
 
     private static final String TAG = M3UParser.class.getSimpleName();
@@ -46,7 +29,7 @@ public class M3UParser {
     private static final String PREFIX_EXTM3U = "#EXTM3U";
     private static final String PREFIX_EXTINF = "#EXTINF:";
     /**
-     * 以分隔符 #EXTINF: 分隔字符串，但是不删除分隔符 https://cloud.tencent.com/developer/ask/69502
+     * 以分隔符 #EXTINF: 分隔字符串，split但是不删除 #EXTINF: 如：https://cloud.tencent.com/developer/ask/69502
      * 回车作为分隔符 \\r?\\n
      */
     private static final String EXT_LINE = String.format("(?=%s)", PREFIX_EXTINF);
@@ -68,14 +51,11 @@ public class M3UParser {
     private static final String ATTR_TVG_SUFFIX = "-tvg";
 
     public static M3UPlayList parse(String content) {
-        M3UPlayList m3uPlayList = null;
+        M3UPlayList m3uPlayList = new M3UPlayList();
+        M3UHeader header = new M3UHeader();
+        List<M3UItem> itemList = new ArrayList<>();
         try {
             String[] linesArray = content.split(EXT_LINE);
-
-            m3uPlayList = new M3UPlayList();
-            M3UHeader header = new M3UHeader();
-            List<M3UItem> itemList = new ArrayList<>();
-
             for (String line : linesArray) {
                 try {
                     line = shrink(line);
@@ -101,14 +81,14 @@ public class M3UParser {
                         itemList.add(item);
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "parse item error");
+                    Log.e(TAG, "parse item error : " + e.getMessage());
                 }
             }
-            m3uPlayList.setHeader(header);
-            m3uPlayList.setItems(itemList);
         } catch (Exception e) {
-            Log.e(TAG, "parse error");
+            Log.e(TAG, "parse error : " + e.getMessage());
         }
+        m3uPlayList.setHeader(header);
+        m3uPlayList.setItems(itemList);
         return m3uPlayList;
     }
 
@@ -127,7 +107,7 @@ public class M3UParser {
             content = new Scanner(is).useDelimiter("\\A").next();
             CloseUtils.closeIOQuietly(is);
         } catch (Exception e) {
-            Log.e(TAG, "parse: input stream error");
+            Log.e(TAG, "parse: input stream error :" + e.getMessage());
         }
         return parse(content);
     }

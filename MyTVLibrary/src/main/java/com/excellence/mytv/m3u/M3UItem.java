@@ -12,7 +12,7 @@ public class M3UItem {
      * https://github.com/dholroyd/m3u8parser
      * https://tools.ietf.org/html/draft-pantos-http-live-streaming-02#page-4
      *
-     *
+     * 下面是两种格式
      * #EXTM3U
      * #EXTINF:-1 tvg-id="Ned1.nl" tvg-name="||NL|| NPO 1 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo1hd.png" group-title="NEDERLAND HD",||NL|| NPO 1 HD
      * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/976
