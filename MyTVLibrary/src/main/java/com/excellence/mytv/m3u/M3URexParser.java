@@ -3,9 +3,9 @@ package com.excellence.mytv.m3u;
 import android.util.Log;
 
 import com.excellence.basetoolslibrary.utils.CloseUtils;
-import com.excellence.basetoolslibrary.utils.FileIOUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +101,36 @@ public class M3URexParser {
         return m3uPlayList;
     }
 
+    public static M3UPlayList parse(InputStream is) {
+        String content = null;
+        try {
+            /**
+             * Scanner对象将首先跳过输入流开头的所有空白分隔符，然后对输入流中的信息进行检查，直到遇到空白分隔符为止
+             * Scanner 将空格当作了一个分隔符，那如何将含有空格的数据输出呢？
+             * 这时就需要用Scanner.useDelimiter( )方法，可以将分隔符号修改为"回车"，或者其他字符。
+             * useDelimiter默认以空格作为分隔符，\\A正则表达式，从字符串开头进行匹配
+             */
+            Scanner scanner = new Scanner(is).useDelimiter("\\A");
+            if (scanner.hasNext()) {
+                content = scanner.next();
+            }
+            CloseUtils.closeIOQuietly(is);
+        } catch (Exception e) {
+            Log.e(TAG, "parse: input stream error :" + e.getMessage());
+        }
+        return parse(content);
+    }
+
+    public static M3UPlayList parse(File file) {
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
+        } catch (Exception e) {
+            Log.e(TAG, "parse file error : " + e.getMessage());
+        }
+        return parse(is);
+    }
+
     private static M3UHeader parseHeader(String line) {
         M3UHeader header = new M3UHeader();
         return header;
@@ -150,31 +180,6 @@ public class M3URexParser {
             result = line.substring(matcher.end());
         }
         return result;
-    }
-
-    public static M3UPlayList parse(InputStream is) {
-        if (is == null) {
-            return null;
-        }
-        String content = null;
-        try {
-            /**
-             * Scanner对象将首先跳过输入流开头的所有空白分隔符，然后对输入流中的信息进行检查，直到遇到空白分隔符为止
-             * Scanner 将空格当作了一个分隔符，那如何将含有空格的数据输出呢？
-             * 这时就需要用Scanner.useDelimiter( )方法，可以将分隔符号修改为"回车"，或者其他字符。
-             * useDelimiter默认以空格作为分隔符，\\A正则表达式，从字符串开头进行匹配
-             */
-            content = new Scanner(is).useDelimiter("\\A").next();
-            CloseUtils.closeIOQuietly(is);
-        } catch (Exception e) {
-            Log.e(TAG, "parse: input stream error :" + e.getMessage());
-        }
-        return parse(content);
-    }
-
-    public static M3UPlayList parse(File file) {
-        String content = FileIOUtils.readFile2String(file, null);
-        return parse(content);
     }
 
 }

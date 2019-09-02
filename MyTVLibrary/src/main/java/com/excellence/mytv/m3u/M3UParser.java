@@ -3,9 +3,9 @@ package com.excellence.mytv.m3u;
 import android.util.Log;
 
 import com.excellence.basetoolslibrary.utils.CloseUtils;
-import com.excellence.basetoolslibrary.utils.FileIOUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,9 +93,6 @@ public class M3UParser {
     }
 
     public static M3UPlayList parse(InputStream is) {
-        if (is == null) {
-            return null;
-        }
         String content = null;
         try {
             /**
@@ -104,7 +101,10 @@ public class M3UParser {
              * 这时就需要用Scanner.useDelimiter( )方法，可以将分隔符号修改为"回车"，或者其他字符。
              * useDelimiter默认以空格作为分隔符，\\A正则表达式，从字符串开头进行匹配
              */
-            content = new Scanner(is).useDelimiter("\\A").next();
+            Scanner scanner = new Scanner(is).useDelimiter("\\A");
+            if (scanner.hasNext()) {
+                content = scanner.next();
+            }
             CloseUtils.closeIOQuietly(is);
         } catch (Exception e) {
             Log.e(TAG, "parse: input stream error :" + e.getMessage());
@@ -113,10 +113,14 @@ public class M3UParser {
     }
 
     public static M3UPlayList parse(File file) {
-        String content = FileIOUtils.readFile2String(file, null);
-        return parse(content);
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
+        } catch (Exception e) {
+            Log.e(TAG, "parse file error : " + e.getMessage());
+        }
+        return parse(is);
     }
-
 
     private static String shrink(String str) {
         return str == null ? null : str.trim();
