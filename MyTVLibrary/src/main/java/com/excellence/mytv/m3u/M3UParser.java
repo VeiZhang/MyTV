@@ -56,7 +56,6 @@ public class M3UParser {
 
     private static final String ATTR_TYPE = "type";
     private static final String ATTR_DLNA_EXTRAS = "dlna_extras";
-    private static final String ATTR_PLUGIN = "plugin";
 
     private static final String ATTR_ID = "id";
     private static final String ATTR_NAME = "name";
@@ -64,6 +63,7 @@ public class M3UParser {
     private static final String ATTR_LOGO = "logo";
     private static final String ATTR_URL = "url";
     private static final String ATTR_GROUP_TITLE = "group-title";
+    private static final String ATTR_TITLE = "title";
     private static final String ATTR_TVG_PREFIX = "tvg-";
     private static final String ATTR_TVG_SUFFIX = "-tvg";
 
@@ -163,22 +163,21 @@ public class M3UParser {
         header.setName(getAttr(attr, ATTR_NAME));
         header.setType(getAttr(attr, ATTR_TYPE));
         header.setDLNAExtras(getAttr(attr, ATTR_DLNA_EXTRAS));
-        header.setPlugin(getAttr(attr, ATTR_PLUGIN));
         return header;
     }
 
     private static M3UItem parseItem(String line) {
         Map<String, String> attr = parseAttributes(line);
         M3UItem item = new M3UItem();
+        item.setDuration(getAttr(attr, ATTR_DURATION));
         item.setId(getAttr(attr, ATTR_ID));
         item.setName(getAttr(attr, ATTR_NAME));
-        item.setDuration(convert2int(getAttr(attr, ATTR_DURATION)));
         item.setLogo(getAttr(attr, ATTR_LOGO));
         item.setGroupTitle(getAttr(attr, ATTR_GROUP_TITLE));
+        item.setTitle(getAttr(attr, ATTR_TITLE));
         item.setUrl(getAttr(attr, ATTR_URL));
         item.setType(getAttr(attr, ATTR_TYPE));
         item.setDLNAExtras(getAttr(attr, ATTR_DLNA_EXTRAS));
-        item.setPlugin(getAttr(attr, ATTR_PLUGIN));
         return item;
     }
 
@@ -225,7 +224,7 @@ public class M3UParser {
                     if (Character.isWhitespace(c)) {
                         // Do nothing
                     } else if (c == ',') {
-                        putAttr(attr, ATTR_NAME, tmp.substring(i));
+                        putAttr(attr, ATTR_TITLE, tmp.substring(i));
                         i = tmp.length();
                     } else {
                         connector.append(c);
@@ -285,16 +284,6 @@ public class M3UParser {
             reset(connector);
         }
         return attr;
-    }
-
-    private static int convert2int(String value) {
-        int ret = -1;
-        try {
-            ret = Integer.parseInt(value);
-        } catch (Exception e) {
-            ret = -1;
-        }
-        return ret;
     }
 
     private static void reset(StringBuffer buffer) {

@@ -22,11 +22,6 @@ public class M3UHeader {
      */
     private String mDLNAExtras;
 
-    /**
-     * The default for playlist media plugin (handler).
-     */
-    private String mPlugin;
-
     public String getName() {
         return mName;
     }
@@ -51,14 +46,6 @@ public class M3UHeader {
         mDLNAExtras = DLNAExtras;
     }
 
-    public String getPlugin() {
-        return mPlugin;
-    }
-
-    public void setPlugin(String plugin) {
-        mPlugin = plugin;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -71,9 +58,6 @@ public class M3UHeader {
         }
         if (mDLNAExtras != null) {
             sb.append("\nDLNA Extras: " + mDLNAExtras);
-        }
-        if (mPlugin != null) {
-            sb.append("\nPlugin: " + mPlugin);
         }
         return sb.toString();
     }

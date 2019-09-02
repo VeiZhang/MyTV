@@ -8,19 +8,32 @@ package com.excellence.mytv.m3u;
 public class M3UItem {
 
     /**
+     * 格式说明：
+     * https://github.com/dholroyd/m3u8parser
+     * https://tools.ietf.org/html/draft-pantos-http-live-streaming-02#page-4
+     *
+     *
+     * #EXTM3U
+     * #EXTINF:-1 tvg-id="Ned1.nl" tvg-name="||NL|| NPO 1 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/npo1hd.png" group-title="NEDERLAND HD",||NL|| NPO 1 HD
+     * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/976
+     * #EXTINF:-1,||NL|| SBS 6 HD
+     * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/961
+     */
+
+    /**
      * The channel id.
      */
     private String mId;
 
     /**
-     * The channel name.
+     * The channel name, maybe empty, use {@link #mTitle}.
      */
     private String mName;
 
     /**
      * The stream duration time, it's unit is second.
      */
-    private int mDuration;
+    private String mDuration;
 
     /**
      * The stream url.
@@ -36,6 +49,11 @@ public class M3UItem {
      * The group name.
      */
     private String mGroupTitle;
+
+    /**
+     * the title -> the name
+     */
+    private String mTitle;
 
     /**
      * The media type. It can be one of the following types: avi, asf, wmv, mp4,
@@ -55,11 +73,6 @@ public class M3UItem {
      */
     private String mDLNAExtras;
 
-    /**
-     * The media plugin (handler).
-     */
-    private String mPlugin;
-
     public String getId() {
         return mId;
     }
@@ -76,11 +89,11 @@ public class M3UItem {
         mName = name;
     }
 
-    public int getDuration() {
+    public String getDuration() {
         return mDuration;
     }
 
-    public void setDuration(int duration) {
+    public void setDuration(String duration) {
         mDuration = duration;
     }
 
@@ -108,6 +121,14 @@ public class M3UItem {
         mGroupTitle = groupTitle;
     }
 
+    public String getTitle() {
+        return mTitle;
+    }
+
+    public void setTitle(String title) {
+        mTitle = title;
+    }
+
     public String getType() {
         return mType;
     }
@@ -124,14 +145,6 @@ public class M3UItem {
         mDLNAExtras = DLNAExtras;
     }
 
-    public String getPlugin() {
-        return mPlugin;
-    }
-
-    public void setPlugin(String plugin) {
-        mPlugin = plugin;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -146,6 +159,9 @@ public class M3UItem {
         if (mGroupTitle != null) {
             sb.append("\nGroup: " + mGroupTitle);
         }
+        if (mTitle != null) {
+            sb.append("\nTitle: " + mTitle);
+        }
         if (mLogo != null) {
             sb.append("\nLogo: " + mLogo);
         }
@@ -154,9 +170,6 @@ public class M3UItem {
         }
         if (mDLNAExtras != null) {
             sb.append("\nDLNA Extras: " + mDLNAExtras);
-        }
-        if (mPlugin != null) {
-            sb.append("\nPlugin: " + mPlugin);
         }
         return sb.toString();
     }
