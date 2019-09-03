@@ -48,17 +48,10 @@ public class M3UHeader {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[Head]");
-        if (mName != null) {
-            sb.append("\nName: " + mName);
-        }
-        if (mType != null) {
-            sb.append("\nType: " + mType);
-        }
-        if (mDLNAExtras != null) {
-            sb.append("\nDLNA Extras: " + mDLNAExtras);
-        }
-        return sb.toString();
+        return "M3UHeader{" +
+                "mName='" + mName + '\'' +
+                ", mType='" + mType + '\'' +
+                ", mDLNAExtras='" + mDLNAExtras + '\'' +
+                '}';
     }
 }

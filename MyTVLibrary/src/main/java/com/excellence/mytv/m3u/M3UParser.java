@@ -8,17 +8,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <pre>
  *     author : VeiZhang
  *     blog   : http://tiimor.cn
  *     time   : 2019/8/29
- *     desc   : https://github.com/crazyks/M3UPlayer    字符串解析解析，不完整，根据思路修改
+ *     desc   : 提升解析速度，全文使用正则表达式匹配 + 单行字符串解析（单行不能用正则表达式，否则非常慢），速度更快
+ *              超大文件可以考虑多线程
+ *
+ *              参考
+ *                  https://github.com/ema987/m3u8parser    正则表达式解析
+ *                  https://github.com/dholroyd/m3u8parser  正则表达式解析
+ *                  https://github.com/crazyks/M3UPlayer    字符串解析解析
+ *
  * </pre>
  */
 
@@ -26,60 +33,45 @@ public class M3UParser {
 
     private static final String TAG = M3UParser.class.getSimpleName();
 
-    private static final String PREFIX_EXTM3U = "#EXTM3U";
-    private static final String PREFIX_EXTINF = "#EXTINF:";
-    /**
-     * 以分隔符 #EXTINF: 分隔字符串，split但是不删除 #EXTINF: 如：https://cloud.tencent.com/developer/ask/69502
-     * 回车作为分隔符 \\r?\\n
-     */
-    private static final String EXT_LINE = String.format("(?=%s)", PREFIX_EXTINF);
-    private static final String PREFIX_COMMENT = "#";
-    private static final String EMPTY_STRING = "";
-    private static final String EXT_NEW_LINE = "\\r?\\n";
+    private static final String EXT_M3U = "#EXTM3U";
+    private static final String EXT_INF = "#EXTINF:";
+    private static final String EXT_SPACE = " ";
+    private static final String EXT_QUOTES = "\"";
 
-    private static final String ATTR_TYPE = "type";
-    private static final String ATTR_DLNA_EXTRAS = "dlna_extras";
-
-    private static final String ATTR_ID = "id";
-    private static final String ATTR_NAME = "name";
-    private static final String ATTR_DURATION = "duration";
-    private static final String ATTR_LOGO = "logo";
-    private static final String ATTR_URL = "url";
+    private static final String ATTR_ID = "tvg-id";
+    private static final String ATTR_NAME = "tvg-name";
+    private static final String ATTR_LOGO = "tvg-logo";
     private static final String ATTR_GROUP_TITLE = "group-title";
-    private static final String ATTR_TITLE = "title";
-    private static final String ATTR_TVG_PREFIX = "tvg-";
-    private static final String ATTR_TVG_SUFFIX = "-tvg";
+
+    /**
+     * 截取头部，保留 #EXTM3U，截断遇到的第一个#EXTINF
+     */
+    private static final String HEADER_REGEXP = String.format("%s[\\s\\S]*?(?=%s)", EXT_M3U, EXT_INF);
+
+    /**
+     * 匹配行的正则表达式
+     * 说明：\cJ -> \n 换行符
+     *
+     * #EXTINF:([^,]+),([^\cJ]+)\cJ#EXTGRP:([^\cJ]+)\cJ([^\cJ]+)
+     * #EXTINF:([^\s]+)\s([^=]+)=([^,]+),([^\cJ]+)\cJ([^\cJ]+)
+     * #EXTINF:([^,]+),([^\cJ]+)\cJ([^\cJ]+)
+     */
+    private static final String ITEM_REGEXP = "#EXTINF:([^,]+),([^\\cJ]+)\\cJ([^\\cJ]+)";
+    private static final Pattern ITEM_PATTERN = Pattern.compile(ITEM_REGEXP);
 
     public static M3UPlayList parse(String content) {
         M3UPlayList m3uPlayList = new M3UPlayList();
         M3UHeader header = new M3UHeader();
         List<M3UItem> itemList = new ArrayList<>();
         try {
-            String[] linesArray = content.split(EXT_LINE);
-            for (String line : linesArray) {
+            Matcher itemMatcher = ITEM_PATTERN.matcher(content);
+            while (itemMatcher.find()) {
                 try {
-                    line = shrink(line);
-                    if (line.startsWith(PREFIX_EXTM3U)) {
-                        header = parseHead(shrink(line.replaceFirst(PREFIX_EXTM3U, EMPTY_STRING)));
-                    } else if (line.startsWith(PREFIX_EXTINF)) {
-                        M3UItem item = parseItem(shrink(line.replaceFirst(PREFIX_EXTINF, EMPTY_STRING)));
-                        itemList.add(item);
-                    } else if (line.startsWith(PREFIX_COMMENT)) {
-                        /**
-                         * Do nothing.
-                         */
-                    } else if (line.equals(EMPTY_STRING)) {
-                        /**
-                         * Do nothing.
-                         */
-                    } else {
-                        /**
-                         * The single line is treated as the stream URL.
-                         */
-                        M3UItem item = new M3UItem();
-                        item.setUrl(line);
-                        itemList.add(item);
-                    }
+                    String info = itemMatcher.group(1).trim();
+                    M3UItem item = parseInfo(info);
+                    item.setTitle(itemMatcher.group(2).trim());
+                    item.setUrl(itemMatcher.group(3).trim());
+                    itemList.add(item);
                 } catch (Exception e) {
                     Log.e(TAG, "parse item error : " + e.getMessage());
                 }
@@ -122,159 +114,56 @@ public class M3UParser {
         return parse(is);
     }
 
-    private static String shrink(String str) {
-        return str == null ? null : str.trim();
-    }
-
-    private static void putAttr(Map<String, String> map, String key, String value) {
-        map.put(key, value);
-    }
-
-    private static String getAttr(Map<String, String> map, String key) {
-        String value = map.get(key);
-        if (value == null) {
-            value = map.get(ATTR_TVG_PREFIX + key);
-            if (value == null) {
-                value = map.get(key + ATTR_TVG_SUFFIX);
-            }
-        }
-        return value;
-    }
-
-    private static M3UHeader parseHead(String line) {
-        Map<String, String> attr = parseAttributes(line);
-        M3UHeader header = new M3UHeader();
-        header.setName(getAttr(attr, ATTR_NAME));
-        header.setType(getAttr(attr, ATTR_TYPE));
-        header.setDLNAExtras(getAttr(attr, ATTR_DLNA_EXTRAS));
-        return header;
-    }
-
-    private static M3UItem parseItem(String line) {
-        Map<String, String> attr = parseAttributes(line);
+    /**
+     * #EXTINF:-1 tvg-id="RTL4.nl" tvg-name="||NL|| RTL 4 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/rtl4.png" group-title="NEDERLAND HD",||NL|| RTL 4 HD
+     * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/968
+     * #EXTINF:-1,||NL|| RTL 5 HD
+     * http://line.protv.cc:8000/JNbDvoT2eT/yY7KS0F8t4/967
+     *
+     * 完整信息转换为info信息是
+     * -1 tvg-id="RTL4.nl" tvg-name="||NL|| RTL 4 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/rtl4.png" group-title="NEDERLAND HD"
+     * -1
+     *
+     * @param info
+     */
+    private static M3UItem parseInfo(String info) {
         M3UItem item = new M3UItem();
-        item.setDuration(getAttr(attr, ATTR_DURATION));
-        item.setId(getAttr(attr, ATTR_ID));
-        item.setName(getAttr(attr, ATTR_NAME));
-        item.setLogo(getAttr(attr, ATTR_LOGO));
-        item.setGroupTitle(getAttr(attr, ATTR_GROUP_TITLE));
-        item.setTitle(getAttr(attr, ATTR_TITLE));
-        item.setUrl(getAttr(attr, ATTR_URL));
-        item.setType(getAttr(attr, ATTR_TYPE));
-        item.setDLNAExtras(getAttr(attr, ATTR_DLNA_EXTRAS));
+        int index = info.indexOf(EXT_SPACE);
+        int length = info.length();
+        if (index == -1) {
+            index = length;
+        }
+        String duration = info.substring(0, index);
+        item.setDuration(duration);
+
+        /**
+         * 有空格则+1，无空格表示没有其他信息
+         */
+        index++;
+        if (index < length) {
+            info = info.substring(index).trim();
+            item.setId(getAttr(info, ATTR_ID));
+            item.setName(getAttr(info, ATTR_NAME));
+            item.setLogo(getAttr(info, ATTR_LOGO));
+            item.setGroupTitle(getAttr(info, ATTR_GROUP_TITLE));
+        }
+
         return item;
     }
 
-    private static Map<String, String> parseAttributes(String line) {
-        Map<String, String> attr = new HashMap<>();
-        if (line == null || line.equals(EMPTY_STRING)) {
-            return attr;
+    private static String getAttr(String info, String key) {
+        String value = null;
+        if (info.contains(key)) {
+            /**
+             * tvg-id="RTL4.nl"
+             * 先找tvg-id=为起始位置
+             * 再找第二个引号为结束位置
+             * 最后清除引号和空格
+             */
+            int startIndex = info.indexOf(key) + key.length() + 1;
+            int endIndex = info.indexOf(EXT_QUOTES, startIndex + 1);
+            value = info.substring(startIndex, endIndex).replace(EXT_QUOTES, "").trim();
         }
-
-        String[] lineItemList = line.split(EXT_NEW_LINE);
-        if (lineItemList.length > 0) {
-            line = lineItemList[0];
-            if (lineItemList.length > 1) {
-                attr.put(ATTR_URL, lineItemList[1]);
-            }
-        }
-
-        Status status = Status.READY;
-        String tmp = line;
-        StringBuffer connector = new StringBuffer();
-        int i = 0;
-        char c = tmp.charAt(i);
-        if (c == '-' || Character.isDigit(c)) {
-            connector.append(c);
-            while (++i < tmp.length()) {
-                c = tmp.charAt(i);
-                if (Character.isDigit(c)) {
-                    connector.append(c);
-                } else {
-                    break;
-                }
-            }
-            putAttr(attr, ATTR_DURATION, connector.toString());
-            tmp = shrink(tmp.replaceFirst(connector.toString(), EMPTY_STRING));
-            reset(connector);
-            i = 0;
-        }
-        String key = EMPTY_STRING;
-        boolean startWithQuota = false;
-        while (i < tmp.length()) {
-            c = tmp.charAt(i++);
-            switch (status) {
-                case READY:
-                    if (Character.isWhitespace(c)) {
-                        // Do nothing
-                    } else if (c == ',') {
-                        putAttr(attr, ATTR_TITLE, tmp.substring(i));
-                        i = tmp.length();
-                    } else {
-                        connector.append(c);
-                        status = Status.READING_KEY;
-                    }
-                    break;
-                case READING_KEY:
-                    if (c == '=') {
-                        key = shrink(key + connector.toString());
-                        reset(connector);
-                        status = Status.KEY_READY;
-                    } else {
-                        connector.append(c);
-                    }
-                    break;
-                case KEY_READY:
-                    if (!Character.isWhitespace(c)) {
-                        if (c == '"') {
-                            startWithQuota = true;
-                        } else {
-                            connector.append(c);
-                        }
-                        status = Status.READING_VALUE;
-                    }
-                    break;
-                case READING_VALUE:
-                    if (startWithQuota) {
-                        connector.append(c);
-                        int end = tmp.indexOf("\"", i);
-                        end = end == -1 ? tmp.length() : end;
-                        connector.append(tmp.substring(i, end));
-                        startWithQuota = false;
-                        putAttr(attr, key, connector.toString());
-                        i = end + 1;
-                        reset(connector);
-                        key = EMPTY_STRING;
-                        status = Status.READY;
-                        break;
-                    }
-                    if (Character.isWhitespace(c)) {
-                        if (connector.length() > 0) {
-                            putAttr(attr, key, connector.toString());
-                            reset(connector);
-                        }
-                        key = EMPTY_STRING;
-                        status = Status.READY;
-                    } else {
-                        connector.append(c);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        if (!key.equals(EMPTY_STRING) && connector.length() > 0) {
-            putAttr(attr, key, connector.toString());
-            reset(connector);
-        }
-        return attr;
-    }
-
-    private static void reset(StringBuffer buffer) {
-        buffer.delete(0, buffer.length());
-    }
-
-    private enum Status {
-        READY, READING_KEY, KEY_READY, READING_VALUE,
+        return value;
     }
 }

@@ -1,5 +1,7 @@
 package com.excellence.mytv.m3u;
 
+import android.support.annotation.Nullable;
+
 /**
  * This class describes a general m3u item.
  *
@@ -21,6 +23,11 @@ public class M3UItem {
      */
 
     /**
+     * The stream duration time, it's unit is second.
+     */
+    private String mDuration;
+
+    /**
      * The channel id.
      */
     private String mId;
@@ -28,17 +35,9 @@ public class M3UItem {
     /**
      * The channel name, maybe empty, use {@link #mTitle}.
      */
+    @Nullable
     private String mName;
 
-    /**
-     * The stream duration time, it's unit is second.
-     */
-    private String mDuration;
-
-    /**
-     * The stream url.
-     */
-    private String mUrl;
 
     /**
      * The url to the logo icon.
@@ -54,6 +53,11 @@ public class M3UItem {
      * the title -> the name
      */
     private String mTitle;
+
+    /**
+     * The stream url.
+     */
+    private String mUrl;
 
     /**
      * The media type. It can be one of the following types: avi, asf, wmv, mp4,
@@ -73,22 +77,6 @@ public class M3UItem {
      */
     private String mDLNAExtras;
 
-    public String getId() {
-        return mId;
-    }
-
-    public void setId(String id) {
-        mId = id;
-    }
-
-    public String getName() {
-        return mName;
-    }
-
-    public void setName(String name) {
-        mName = name;
-    }
-
     public String getDuration() {
         return mDuration;
     }
@@ -97,12 +85,26 @@ public class M3UItem {
         mDuration = duration;
     }
 
-    public String getUrl() {
-        return mUrl;
+    public String getId() {
+        return mId;
     }
 
-    public void setUrl(String url) {
-        mUrl = url;
+    public void setId(String id) {
+        mId = id;
+    }
+
+    /**
+     * @see #getTitle()
+     *
+     * @return
+     */
+    @Nullable
+    public String getName() {
+        return mName;
+    }
+
+    public void setName(String name) {
+        mName = name;
     }
 
     public String getLogo() {
@@ -129,6 +131,14 @@ public class M3UItem {
         mTitle = title;
     }
 
+    public String getUrl() {
+        return mUrl;
+    }
+
+    public void setUrl(String url) {
+        mUrl = url;
+    }
+
     public String getType() {
         return mType;
     }
@@ -147,30 +157,16 @@ public class M3UItem {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[Item]");
-        if (mName != null) {
-            sb.append("\nName: " + mName);
-        }
-        sb.append("\nDuration: " + mDuration);
-        if (mUrl != null) {
-            sb.append("\nURL: " + mUrl);
-        }
-        if (mGroupTitle != null) {
-            sb.append("\nGroup: " + mGroupTitle);
-        }
-        if (mTitle != null) {
-            sb.append("\nTitle: " + mTitle);
-        }
-        if (mLogo != null) {
-            sb.append("\nLogo: " + mLogo);
-        }
-        if (mType != null) {
-            sb.append("\nType: " + mType);
-        }
-        if (mDLNAExtras != null) {
-            sb.append("\nDLNA Extras: " + mDLNAExtras);
-        }
-        return sb.toString();
+        return "M3UItem{" +
+                "mDuration='" + mDuration + '\'' +
+                ", mId='" + mId + '\'' +
+                ", mName='" + mName + '\'' +
+                ", mLogo='" + mLogo + '\'' +
+                ", mGroupTitle='" + mGroupTitle + '\'' +
+                ", mTitle='" + mTitle + '\'' +
+                ", mUrl='" + mUrl + '\'' +
+                ", mType='" + mType + '\'' +
+                ", mDLNAExtras='" + mDLNAExtras + '\'' +
+                '}';
     }
 }
