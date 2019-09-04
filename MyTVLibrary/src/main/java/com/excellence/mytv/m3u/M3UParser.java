@@ -2,14 +2,12 @@ package com.excellence.mytv.m3u;
 
 import android.util.Log;
 
-import com.excellence.basetoolslibrary.utils.CloseUtils;
-
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.regex.Pattern;
 
 /**
@@ -33,6 +31,11 @@ import java.util.regex.Pattern;
 public class M3UParser {
 
     private static final String TAG = M3UParser.class.getSimpleName();
+
+    /**
+     * 8M
+     */
+    private static final int BUF_LEN = 8 * 1024 * 1024;
 
     private static final String EXT_M3U = "#EXTM3U";
     private static final String EXT_INF = "#EXTINF:";
@@ -61,6 +64,12 @@ public class M3UParser {
      * #EXTINF:([^,]+),([^\cJ]+)\cJ([^\cJ]+)
      */
 
+    /**
+     * 一次性解析内容
+     *
+     * @param content
+     * @return
+     */
     public static M3UPlayList parse(String content) {
         M3UPlayList m3uPlayList = new M3UPlayList();
         M3UHeader header = new M3UHeader();
@@ -73,7 +82,7 @@ public class M3UParser {
                         /**
                          * parse header
                          */
-                    } else {
+                    } else if (!line.isEmpty()) {
                         M3UItem item = parseInfo(line);
                         itemList.add(item);
                     }
@@ -81,7 +90,6 @@ public class M3UParser {
                     /**
                      * 占时间
                      */
-                    e.printStackTrace();
                     // Log.e(TAG, "parse item error : " + e.getMessage());
                 }
             }
@@ -93,30 +101,85 @@ public class M3UParser {
         return m3uPlayList;
     }
 
-    public static M3UPlayList parse(InputStream is) {
-        String content = null;
+    /**
+     * 多次解析内容，比如大文件解析 {@link #parse(File)}
+     *
+     * @param m3uPlayList
+     * @param content
+     * @return
+     */
+    public static void parse(M3UPlayList m3uPlayList, String content) {
+        if (m3uPlayList == null) {
+            m3uPlayList = new M3UPlayList();
+        }
+        M3UHeader header = new M3UHeader();
+        List<M3UItem> itemList = new ArrayList<>();
         try {
-            /**
-             * Scanner对象将首先跳过输入流开头的所有空白分隔符，然后对输入流中的信息进行检查，直到遇到空白分隔符为止
-             * Scanner 将空格当作了一个分隔符，那如何将含有空格的数据输出呢？
-             * 这时就需要用Scanner.useDelimiter( )方法，可以将分隔符号修改为"回车"，或者其他字符。
-             * useDelimiter默认以空格作为分隔符，\\A正则表达式，从字符串开头进行匹配
-             */
-            Scanner scanner = new Scanner(is).useDelimiter("\\A");
-            if (scanner.hasNext()) {
-                content = scanner.next();
+            String[] lines = Pattern.compile(EXT_INF).split(content);
+            for (String line : lines) {
+                try {
+                    if (line.startsWith(EXT_M3U)) {
+                        /**
+                         * parse header
+                         */
+                    } else if (!line.isEmpty()) {
+                        M3UItem item = parseInfo(line);
+                        itemList.add(item);
+                    }
+                } catch (Exception e) {
+                    /**
+                     * 占时间
+                     */
+                    // Log.e(TAG, "parse item error : " + e.getMessage());
+                }
             }
-            CloseUtils.closeIOQuietly(is);
+        } catch (Exception e) {
+            Log.e(TAG, "parse error : " + e.getMessage());
+        }
+        m3uPlayList.setHeader(header);
+        if (m3uPlayList.getItems() == null) {
+            m3uPlayList.setItems(itemList);
+        } else {
+            m3uPlayList.getItems().addAll(itemList);
+        }
+    }
+
+    public static M3UPlayList parse(InputStream is) {
+        M3UPlayList m3uPlayList = new M3UPlayList();
+
+        StringBuffer content = new StringBuffer();
+        try {
+            int len;
+            byte[] buffer = new byte[BUF_LEN];
+            while ((len = is.read(buffer, 0, buffer.length)) != -1) {
+                content.append(new String(buffer, 0, len));
+                if (len < buffer.length) {
+                    /**
+                     * 最终数据解析，没有满10M
+                     */
+                    len = content.length();
+                } else {
+                    /**
+                     * 10M数据解析
+                     */
+                    len = content.lastIndexOf(EXT_INF);
+                }
+                parse(m3uPlayList, content.substring(0, len));
+                /**
+                 * 把截掉的字符串当做下一次的起始
+                 */
+                content = new StringBuffer(content.substring(len));
+            }
         } catch (Exception e) {
             Log.e(TAG, "parse: input stream error :" + e.getMessage());
         }
-        return parse(content);
+        return m3uPlayList;
     }
 
     public static M3UPlayList parse(File file) {
         InputStream is = null;
         try {
-            is = new FileInputStream(file);
+            is = new BufferedInputStream(new FileInputStream(file));
         } catch (Exception e) {
             Log.e(TAG, "parse file error : " + e.getMessage());
         }
