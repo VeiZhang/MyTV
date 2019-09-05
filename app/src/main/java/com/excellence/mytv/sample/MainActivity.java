@@ -67,6 +67,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, msg);
                 Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
             }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                throwable.printStackTrace();
+            }
         });
     }
 }
