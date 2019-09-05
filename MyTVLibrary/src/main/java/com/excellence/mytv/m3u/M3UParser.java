@@ -2,6 +2,8 @@ package com.excellence.mytv.m3u;
 
 import android.util.Log;
 
+import com.excellence.basetoolslibrary.utils.CloseUtils;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,9 +35,10 @@ public class M3UParser {
     private static final String TAG = M3UParser.class.getSimpleName();
 
     /**
-     * 8M
+     * 8K读取，8M解析
      */
-    private static final int BUF_LEN = 8 * 1024 * 1024;
+    private static final int BUF_LEN = 8 * 1024;
+    private static final int BUF_COUNT = 8 * 1024 * 1024;
 
     private static final String EXT_M3U = "#EXTM3U";
     private static final String EXT_INF = "#EXTINF:";
@@ -72,32 +75,9 @@ public class M3UParser {
      */
     public static M3UPlayList parse(String content) {
         M3UPlayList m3uPlayList = new M3UPlayList();
-        M3UHeader header = new M3UHeader();
-        List<M3UItem> itemList = new ArrayList<>();
-        try {
-            String[] lines = Pattern.compile(EXT_INF).split(content);
-            for (String line : lines) {
-                try {
-                    if (line.startsWith(EXT_M3U)) {
-                        /**
-                         * parse header
-                         */
-                    } else if (!line.isEmpty()) {
-                        M3UItem item = parseInfo(line);
-                        itemList.add(item);
-                    }
-                } catch (Exception e) {
-                    /**
-                     * 占时间
-                     */
-                    // Log.e(TAG, "parse item error : " + e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "parse error : " + e.getMessage());
-        }
-        m3uPlayList.setHeader(header);
-        m3uPlayList.setItems(itemList);
+
+        parse(m3uPlayList, content);
+
         return m3uPlayList;
     }
 
@@ -149,27 +129,29 @@ public class M3UParser {
 
         StringBuffer content = new StringBuffer();
         try {
+            int count = 0;
             int len;
             byte[] buffer = new byte[BUF_LEN];
-            while ((len = is.read(buffer, 0, buffer.length)) != -1) {
-                content.append(new String(buffer, 0, len));
-                if (len < buffer.length) {
-                    /**
-                     * 最终数据解析，没有满10M
-                     */
-                    len = content.length();
+            do {
+                len = is.read(buffer, 0, buffer.length);
+                if (len == -1) {
+                    parse(m3uPlayList, content.toString());
+                    break;
                 } else {
-                    /**
-                     * 10M数据解析
-                     */
-                    len = content.lastIndexOf(EXT_INF);
+                    count += len;
+                    content.append(new String(buffer, 0, len));
+                    if (count >= BUF_COUNT) {
+                        len = content.lastIndexOf(EXT_INF);
+                        parse(m3uPlayList, content.substring(0, len));
+                        /**
+                         * 把截掉的字符串当做下一次的起始
+                         */
+                        content = new StringBuffer(content.substring(len));
+                        count = content.length();
+                    }
                 }
-                parse(m3uPlayList, content.substring(0, len));
-                /**
-                 * 把截掉的字符串当做下一次的起始
-                 */
-                content = new StringBuffer(content.substring(len));
-            }
+            } while (true);
+            CloseUtils.closeIOQuietly(is);
         } catch (Exception e) {
             Log.e(TAG, "parse: input stream error :" + e.getMessage());
         }
