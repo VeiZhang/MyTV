@@ -6,17 +6,18 @@
     android:padding="30dp"
     tools:context=".MainActivity">
 
-    <EditText
-        android:id="@+id/file_et"
+    <Button
+        android:id="@+id/file_btn"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:hint="输入待解析文件路径" />
+        android:hint="选择文件路径"
+        android:textAllCaps="false" />
 
     <Button
         android:id="@+id/json_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/file_et"
+        android:layout_below="@+id/file_btn"
         android:text="开始解析" />
 
 </RelativeLayout>
