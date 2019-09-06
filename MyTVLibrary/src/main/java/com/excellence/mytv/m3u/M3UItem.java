@@ -1,6 +1,6 @@
 package com.excellence.mytv.m3u;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * This class describes a general m3u item.

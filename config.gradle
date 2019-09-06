@@ -25,10 +25,10 @@ ext {
     // 配置
     android = [
             /*************************原生配置*************************/
-            compileSdkVersion       : 25,
+            compileSdkVersion       : 28,
             buildToolsVersion       : "25.0.0",
-            minSdkVersion           : 15,
-            targetSdkVersion        : 19,
+            minSdkVersion           : 21,
+            targetSdkVersion        : 21,
             versionCode             : getVersionCode(),
             versionName             : getVersionName(),
 
@@ -121,6 +121,10 @@ ext {
             "ijkplayer-x86"                   : "tv.danmaku.ijk.media:ijkplayer-x86:${android["ijkplayer"]}",
             "ijkplayer-x86_64"                : "tv.danmaku.ijk.media:ijkplayer-x86_64:${android["ijkplayer"]}",
             "ijkplayer-exo"                   : "tv.danmaku.ijk.media:ijkplayer-exo:${android["ijkplayer"]}",
+
+            // https://github.com/zaclimon/Tsutaeru
+            "xipl"                            : "com.zaclimon:xipl:0.2.2",
+            "tiflibrary"                      : "com.zaclimon:tiflibrary:0.2.2",
 
             /*************************个人依赖*************************/
             // https://github.com/VeiZhang/BaseToolsLibrary

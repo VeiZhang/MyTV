@@ -3,6 +3,7 @@ package com.excellence.mytv.m3u;
 import android.util.Log;
 
 import com.excellence.basetoolslibrary.utils.CloseUtils;
+import com.excellence.basetoolslibrary.utils.EmptyUtils;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -102,7 +103,7 @@ public class M3UParser {
                         /**
                          * parse header
                          */
-                    } else if (!line.isEmpty()) {
+                    } else if (EmptyUtils.isNotEmpty(line)) {
                         M3UItem item = parseInfo(line);
                         itemList.add(item);
                     }
