@@ -1,10 +1,8 @@
-# MyTV
+# 电视端相关的一些常用API集合
 
-## 电视端相关的一些常用API集合
+# Xtreme Codes IPTV
 
-### Xtreme Codes IPTV
-
-#### M3U解析
+## M3U解析
 
 解析节目列表，live、vod根据播放链接的后缀区分：avi、mkv、mp4等等
 
@@ -23,7 +21,7 @@
     #EXTINF:-1 tvg-id="TV 8,5 TR" tvg-name="||TR|| TV 8.5 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/tv8.png" group-title="TURKEY I ULUSAL",||TR|| TV 8.5 HD
     ```
 
-#### xmltv解析
+## xmltv解析
 
 解析Epg数据
 
