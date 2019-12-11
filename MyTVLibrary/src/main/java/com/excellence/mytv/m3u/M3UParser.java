@@ -44,7 +44,14 @@ public class M3UParser {
     private static final String EXT_M3U = "#EXTM3U";
     private static final String EXT_INF = "#EXTINF:";
     private static final String EXT_SPACE = " ";
+    /**
+     * 转义 "
+     */
     private static final String EXT_QUOTES = "\"";
+    /**
+     * 转义 \"，一些节目名中带有"
+     */
+    private static final String EXT_SLASH_QUOTES = "\\\"";
     private static final String EXT_NEW_LINE = "\n";
     private static final String EXT_COMMA = ",";
     private static final String EXT_EQUAL = "=";
@@ -60,8 +67,11 @@ public class M3UParser {
      *
      * 最佳正则表达式解析行：#EXTINF:
      *
-     * 下面三种正则表达式解析带多个逗号的行会有问题，想要使用下面表达式需要额外的处理：
+     * 下面三种正则表达式解析特殊的行会有问题，想要使用下面表达式需要额外的处理：
+     * 1.带多个逗号的行：从尾部找"，旁边的,
      * #EXTINF:-1 tvg-id="TV 8,5 TR" tvg-name="||TR|| TV 8.5 HD" tvg-logo="http://tv.trexiptv.com:8000/picons/logos/tv8.png" group-title="TURKEY I ULUSAL",||TR|| TV 8.5 HD
+     * 2.节目名带"，即\"。由于问题1延伸出来的问题2：找"会找到\"节目名中，导致index不对
+     * #EXTINF:-1 tvg-ID="" tvg-name="|FR| El Camino : Un film \"Breaking Bad\" (AUDIO)" tvg-logo="https://image.tmdb.org/t/p/w500/ePXuKdXZuJx8hHMNr2yM4jY2L7Z.jpg" group-title="|FR| CINÉMA",|FR| El Camino : Un film \"Breaking Bad\" (AUDIO)
      *
      * #EXTINF:([^,]+),([^\cJ]+)\cJ#EXTGRP:([^\cJ]+)\cJ([^\cJ]+)
      * #EXTINF:([^\s]+)\s([^=]+)=([^,]+),([^\cJ]+)\cJ([^\cJ]+)
@@ -188,7 +198,7 @@ public class M3UParser {
      *
      * @param line
      */
-    private static M3UItem parseInfo(String line) {
+    public static M3UItem parseInfo(String line) {
         M3UItem item = new M3UItem();
         /**
          * 取URL，从第一个\n到结束
@@ -199,9 +209,28 @@ public class M3UParser {
         line = line.substring(0, index);
 
         /**
-         * 取,，从最后一个"开始，如果没有"，则从开始位置查
+         * 取,，从最后一个"开始，如果没有"，则从开始位置查，需要排除节目名中的\"
          */
-        index = line.lastIndexOf(EXT_QUOTES);
+        int extQuotesIndex = line.length();
+        do {
+            String tempLine = line.substring(0, extQuotesIndex);
+            extQuotesIndex = tempLine.lastIndexOf(EXT_QUOTES);
+            /**
+             * 判断是否遇到了/"，而不是"
+             */
+            int extSlashQuotesIndex = tempLine.lastIndexOf(EXT_SLASH_QUOTES);
+            if (extSlashQuotesIndex == (extQuotesIndex - 1)) {
+                extQuotesIndex--;
+            } else {
+                break;
+            }
+
+            if (extQuotesIndex <= 0) {
+                break;
+            }
+        } while (true);
+        index = extQuotesIndex;
+
         index = line.indexOf(EXT_COMMA, index);
         item.setTitle(line.substring(index + EXT_COMMA.length()).trim());
         line = line.substring(0, index);
