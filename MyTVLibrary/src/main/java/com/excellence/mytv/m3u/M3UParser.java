@@ -6,9 +6,11 @@ import com.excellence.basetoolslibrary.utils.CloseUtils;
 import com.excellence.basetoolslibrary.utils.EmptyUtils;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -79,6 +81,57 @@ public class M3UParser {
      */
 
     /**
+     * 每行解析，速度最快
+     *
+     * @param is
+     * @return
+     */
+    public static M3UPlayList parseLine(InputStream is) {
+        M3UPlayList m3uPlayList = new M3UPlayList();
+        M3UHeader header = new M3UHeader();
+        List<M3UItem> itemList = new ArrayList<>();
+
+        InputStreamReader ir = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(ir);
+        try {
+            String line = br.readLine();
+            while (line != null) {
+                if (line.startsWith(EXT_INF)) {
+                    StringBuilder sb = new StringBuilder(line);
+                    while ((line = br.readLine()) != null
+                            && !line.startsWith(EXT_INF)) {
+                        sb.append('\n').append(line);
+                        try {
+                            M3UItem m3uItem = M3UParser.parseInfo(sb.toString());
+                            itemList.add(m3uItem);
+                        } catch (Exception e) {
+//                            Log.e(TAG, "parse m3u item error");
+                        }
+                    }
+                } else {
+//                    if (line.startsWith(EXT_M3U)) {
+//                        /**
+//                         * parse header
+//                         */
+//                    }
+                    line = br.readLine();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        CloseUtils.closeIOQuietly(br);
+
+        m3uPlayList.setHeader(header);
+        if (m3uPlayList.getItems() == null) {
+            m3uPlayList.setItems(itemList);
+        } else {
+            m3uPlayList.getItems().addAll(itemList);
+        }
+        return m3uPlayList;
+    }
+
+    /**
      * 一次性解析内容
      *
      * @param content
@@ -109,11 +162,12 @@ public class M3UParser {
             String[] lines = Pattern.compile(EXT_INF).split(content);
             for (String line : lines) {
                 try {
-                    if (line.startsWith(EXT_M3U)) {
-                        /**
-                         * parse header
-                         */
-                    } else if (EmptyUtils.isNotEmpty(line)) {
+//                    if (line.startsWith(EXT_M3U)) {
+//                        /**
+//                         * parse header
+//                         */
+//                    } else
+                    if (EmptyUtils.isNotEmpty(line)) {
                         M3UItem item = parseInfo(line);
                         itemList.add(item);
                     }
@@ -135,6 +189,13 @@ public class M3UParser {
         }
     }
 
+    /**
+     * 优化解析速度&内存，但是速度比不上每行解析
+     * 分段解析，每次读取8K，读满8M，再解析，保存列表；再循环
+     *
+     * @param is
+     * @return
+     */
     public static M3UPlayList parse(InputStream is) {
         M3UPlayList m3uPlayList = new M3UPlayList();
 
@@ -169,6 +230,12 @@ public class M3UParser {
         return m3uPlayList;
     }
 
+    /**
+     * 读取文件，分段解析，速度慢于{@link #parseLine(File)}
+     *
+     * @param file
+     * @return
+     */
     public static M3UPlayList parse(File file) {
         InputStream is = null;
         try {
@@ -177,6 +244,22 @@ public class M3UParser {
             Log.e(TAG, "parse file error : " + e.getMessage());
         }
         return parse(is);
+    }
+
+    /**
+     * 读取文件，按行解析，速度快于{@link #parse(File)}
+     *
+     * @param file
+     * @return
+     */
+    public static M3UPlayList parseLine(File file) {
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
+        } catch (Exception e) {
+            Log.e(TAG, "parse file error : " + e.getMessage());
+        }
+        return parseLine(is);
     }
 
     /**
@@ -268,14 +351,16 @@ public class M3UParser {
 
     private static String getAttr(String info, String key) {
         String value = null;
-        if (info.contains(key)) {
+        String lowerCaseInfo = info.toLowerCase();
+        String keyLowerCase = key.toLowerCase();
+        if (lowerCaseInfo.contains(keyLowerCase)) {
             /**
              * tvg-id="RTL4.nl"
              * 先找tvg-id=为起始位置
              * 再找第二个引号为结束位置
              * 最后清除引号和空格
              */
-            int startIndex = info.indexOf(key) + key.length() + EXT_EQUAL.length() + EXT_QUOTES.length();
+            int startIndex = lowerCaseInfo.indexOf(keyLowerCase) + key.length() + EXT_EQUAL.length() + EXT_QUOTES.length();
             int endIndex = info.indexOf(EXT_QUOTES, startIndex);
             value = info.substring(startIndex, endIndex).replace(EXT_QUOTES, "").trim();
         }
