@@ -299,7 +299,7 @@ public class M3UParser {
             String tempLine = line.substring(0, extQuotesIndex);
             extQuotesIndex = tempLine.lastIndexOf(EXT_QUOTES);
             /**
-             * 判断是否遇到了/"，而不是"
+             * 判断是否遇到了\"，而不是"
              */
             int extSlashQuotesIndex = tempLine.lastIndexOf(EXT_SLASH_QUOTES);
             if (extSlashQuotesIndex == (extQuotesIndex - 1)) {
@@ -359,10 +359,28 @@ public class M3UParser {
              * 先找tvg-id=为起始位置
              * 再找第二个引号为结束位置
              * 最后清除引号和空格
+             *
+             * 这里注意转义字符
              */
-            int startIndex = lowerCaseInfo.indexOf(keyLowerCase) + key.length() + EXT_EQUAL.length() + EXT_QUOTES.length();
-            int endIndex = info.indexOf(EXT_QUOTES, startIndex);
-            value = info.substring(startIndex, endIndex).replace(EXT_QUOTES, "").trim();
+            int startIndex = lowerCaseInfo.indexOf(keyLowerCase) + key.length() + EXT_EQUAL.length() + 1;
+            int endIndex = 0;
+            int searchQuotesIndex = startIndex;
+            do {
+                endIndex = info.indexOf(EXT_QUOTES, searchQuotesIndex);
+                /**
+                 * 判断是否遇到了\"，而不是"
+                 */
+                int extSlashQuotesIndex = info.indexOf(EXT_SLASH_QUOTES, searchQuotesIndex);
+                if (extSlashQuotesIndex == (endIndex - 1)) {
+                    searchQuotesIndex = extSlashQuotesIndex + EXT_SLASH_QUOTES.length();
+                } else {
+                    break;
+                }
+                if (searchQuotesIndex >= info.length()) {
+                    break;
+                }
+            } while (true);
+            value = info.substring(startIndex, endIndex).trim();
         }
         return value;
     }
