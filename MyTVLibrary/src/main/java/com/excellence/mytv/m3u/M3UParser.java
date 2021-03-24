@@ -104,6 +104,7 @@ public class M3UParser {
                         try {
                             M3UItem m3uItem = M3UParser.parseInfo(sb.toString());
                             itemList.add(m3uItem);
+                            break;
                         } catch (Exception e) {
 //                            Log.e(TAG, "parse m3u item error");
                         }
