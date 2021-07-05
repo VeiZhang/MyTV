@@ -341,7 +341,9 @@ public class M3UParser {
         index++;
         if (index < length) {
             line = line.substring(index).trim();
-            item.setId(getAttr(line, ATTR_ID));
+            String tvgId = getAttr(line, ATTR_ID);
+            item.setId(tvgId);
+            item.setTvgId(tvgId);
             item.setName(getAttr(line, ATTR_NAME));
             item.setLogo(getAttr(line, ATTR_LOGO));
             item.setGroupTitle(getAttr(line, ATTR_GROUP_TITLE));

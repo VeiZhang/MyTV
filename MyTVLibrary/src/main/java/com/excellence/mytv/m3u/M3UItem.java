@@ -33,6 +33,12 @@ public class M3UItem {
     private String mId;
 
     /**
+     * tvg_id: 借助tvg_id 对应epg xmtvl  channel id
+     * 用于匹配 epg
+     */
+    private String mTvgId;
+
+    /**
      * The channel name, maybe empty, use {@link #mTitle}.
      */
     @Nullable
@@ -155,11 +161,20 @@ public class M3UItem {
         mDLNAExtras = DLNAExtras;
     }
 
+    public String getTvgId() {
+        return mTvgId;
+    }
+
+    public void setTvgId(String tvgId) {
+        mTvgId = tvgId;
+    }
+
     @Override
     public String toString() {
         return "M3UItem{" +
                 "mDuration='" + mDuration + '\'' +
                 ", mId='" + mId + '\'' +
+                ", mTvgId='" + mTvgId + '\'' +
                 ", mName='" + mName + '\'' +
                 ", mLogo='" + mLogo + '\'' +
                 ", mGroupTitle='" + mGroupTitle + '\'' +
